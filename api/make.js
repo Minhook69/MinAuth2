@@ -1,82 +1,73 @@
-const { generateKey } = require('../utils/keyGenerator');
+const kv = require('../utils/kv');
 const { verifyAdmin } = require('../utils/auth');
-const { getAppKey, putAppKey, validateAppId } = require('../utils/kv');
+
+function generateKey(pattern = '****-****-****-****') {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return pattern.split('').map(char => {
+    if (char === '*') return chars.charAt(Math.floor(Math.random() * chars.length));
+    return char;
+  }).join('');
+}
 
 function calculateExpiry(amount, unit) {
   if (unit === 'lifetime') return null;
   
   const now = new Date();
-  const conversions = {
-    minutes: amount,
-    hours: amount * 60,
-    days: amount * 1440,
-    weeks: amount * 10080,
-    months: amount * 43200,
-    years: amount * 525600
+  const multipliers = {
+    minutes: 60 * 1000,
+    hours: 60 * 60 * 1000,
+    days: 24 * 60 * 60 * 1000,
+    weeks: 7 * 24 * 60 * 60 * 1000,
+    months: 30 * 24 * 60 * 60 * 1000,
+    years: 365 * 24 * 60 * 60 * 1000
   };
   
-  const minutes = conversions[unit] || amount * 1440;
-  now.setMinutes(now.getMinutes() + minutes);
-  return now.toISOString();
-}
-
-function applyPattern(pattern) {
-  return pattern.replace(/\*/g, () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return chars[Math.floor(Math.random() * chars.length)];
-  });
+  const multiplier = multipliers[unit] || multipliers.days;
+  return new Date(now.getTime() + (amount * multiplier)).toISOString();
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== 'GET') {
-    return res.status(405).send('method not allowed');
-  }
-
-  const { 
-    admin, 
-    appId = 'default',
-    amount = 30,
-    unit = 'days',
-    pattern,
-    nohwid
-  } = req.query;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  const { admin, pattern, amount, unit, nohwid } = req.query;
 
   if (!verifyAdmin(admin)) {
-    return res.status(403).send('Forbidden');
-  }
-
-  if (!validateAppId(appId)) {
-    return res.status(400).send('invalid appId format');
+    return res.status(403).send('invalid admin password');
   }
 
   try {
-    let newKey;
-    let exists = true;
-
-    do {
-      newKey = pattern ? applyPattern(pattern) : generateKey();
-      const existing = await getAppKey(appId, newKey);
-      exists = existing !== null;
-    } while (exists);
-
+    // Generar key según el patrón
+    const keyPattern = pattern || '****-****-****-****';
+    const newKey = generateKey(keyPattern);
+    
+    // Calcular fecha de expiración
+    const timeAmount = parseInt(amount) || 30;
+    const timeUnit = unit || 'days';
+    const expiryDate = calculateExpiry(timeAmount, timeUnit);
+    
+    // Determinar si es sin HWID
+    const isNoHwid = nohwid === 'true';
+    
     const keyData = {
-      hwid: '',
-      created: new Date().toISOString(),
-      expires: calculateExpiry(parseInt(amount), unit),
+      hwid: null,
+      no_hwid: isNoHwid,
       last_reset: null,
-      no_hwid: nohwid === 'true',
-      appId: appId
+      created: new Date().toISOString(),
+      expires: expiryDate,
+      email: ""
     };
 
-    await putAppKey(appId, newKey, keyData);
-
-    const expiryStr = keyData.expires 
-      ? ` (expires: ${new Date(keyData.expires).toLocaleDateString()})` 
-      : ' (lifetime)';
+    await kv.put(newKey, keyData);
     
-    res.status(200).send(newKey + expiryStr);
+    // Respuesta con información adicional
+    const expiryInfo = expiryDate 
+      ? ` (expires: ${new Date(expiryDate).toLocaleDateString()})` 
+      : ' (lifetime)';
+    const hwidInfo = isNoHwid ? ' [NO-HWID]' : ' [HWID-LOCKED]';
+    
+    return res.status(200).send(`${newKey}${expiryInfo}${hwidInfo}`);
   } catch (error) {
     console.error('Make error:', error);
-    res.status(500).send('Server error: ' + error.message);
+    return res.status(500).send('Internal server error');
   }
 };
