@@ -5,7 +5,7 @@
 
 const App = {
   // ===== CONFIGURACIÓN =====
-  API_URL: 'https://minauth.vercel.app', // ⚠️ CAMBIA ESTO POR TU URL DE VERCEL
+  API_URL: 'https://minauth2.vercel.app', // ⚠️ CAMBIA ESTO POR TU URL DE VERCEL
   adminPassword: null,
   allKeys: [],
 
