@@ -1,45 +1,42 @@
+const kv = require('../utils/kv');
 const { verifyAdmin } = require('../utils/auth');
-const { put, validateAppId } = require('../utils/kv');
 
 module.exports = async (req, res) => {
-  const { admin, appId = 'default', version, required, message } = req.query;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
+
+  const { admin, version, required, message } = req.query;
 
   if (!verifyAdmin(admin)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  if (!validateAppId(appId)) {
-    return res.status(400).json({ error: 'invalid appId format' });
-  }
-
   if (!version) {
-    return res.status(400).json({ error: 'version is required' });
+    return res.status(400).json({ error: 'Missing version' });
   }
 
   // Validar formato de versión (X.X.X)
   const versionRegex = /^\d+\.\d+\.\d+$/;
   if (!versionRegex.test(version)) {
-    return res.status(400).json({ error: 'invalid version format (use X.X.X)' });
+    return res.status(400).json({ error: 'Invalid version format. Use X.X.X (e.g., 1.0.0)' });
   }
 
   try {
-    const versionKey = `version:${appId}`;
     const versionData = {
-      version,
+      version: version,
       required: required === 'true',
-      message: message || '',
+      message: message || "Please update to the latest version",
       updated: new Date().toISOString()
     };
 
-    await put(versionKey, versionData);
+    await kv.put('__APP_VERSION__', versionData);
 
-    res.status(200).json({ 
-      success: true, 
-      ...versionData,
-      appId 
+    return res.status(200).json({
+      success: true,
+      data: versionData
     });
-  } catch (err) {
-    console.error('Error setting version:', err);
-    res.status(500).json({ error: 'Failed to set version' });
+  } catch (error) {
+    console.error('SetVersion error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
