@@ -1,33 +1,28 @@
-const { get, validateAppId } = require('../utils/kv');
+const kv = require('../utils/kv');
 
 module.exports = async (req, res) => {
-  const { appId = 'default' } = req.query;
-
-  if (!validateAppId(appId)) {
-    return res.status(400).json({ error: 'invalid appId format' });
-  }
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
 
   try {
-    const versionKey = `version:${appId}`;
-    const versionData = await get(versionKey);
-
+    const versionData = await kv.get('__APP_VERSION__');
+    
     if (!versionData) {
       // Versión por defecto si no existe
-      return res.status(200).json({
-        version: '1.0.0',
-        required: false,
-        message: '',
-        updated: new Date().toISOString(),
-        appId
-      });
+      const defaultVersion = {
+        version: "1.0.0",
+        required: true,
+        message: "Please update to the latest version",
+        updated: new Date().toISOString()
+      };
+      
+      await kv.put('__APP_VERSION__', defaultVersion);
+      return res.status(200).json(defaultVersion);
     }
 
-    res.status(200).json({
-      ...versionData,
-      appId
-    });
-  } catch (err) {
-    console.error('Error fetching version:', err);
-    res.status(500).json({ error: 'Failed to fetch version' });
+    return res.status(200).json(versionData);
+  } catch (error) {
+    console.error('GetVersion error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
