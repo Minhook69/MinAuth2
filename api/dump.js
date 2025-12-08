@@ -1,22 +1,30 @@
+const kv = require('../utils/kv');
 const { verifyAdmin } = require('../utils/auth');
-const { getAppKeys, validateAppId } = require('../utils/kv');
 
 module.exports = async (req, res) => {
-  const { admin, appId = 'default' } = req.query;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
+  
+  const { admin } = req.query;
 
   if (!verifyAdmin(admin)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  if (!validateAppId(appId)) {
-    return res.status(400).json({ error: 'invalid appId format' });
+    return res.status(403).send('Forbidden');
   }
 
   try {
-    const keys = await getAppKeys(appId);
-    res.status(200).json({ keys, appId });
-  } catch (err) {
-    console.error('Error fetching keys:', err);
-    res.status(500).json({ error: 'Failed to fetch keys', details: err.message });
+    const allKeys = await kv.list();
+    const keys = {};
+
+    for (const { name } of allKeys) {
+      const data = await kv.get(name);
+      if (data) {
+        keys[name] = data;
+      }
+    }
+
+    return res.status(200).json({ keys });
+  } catch (error) {
+    console.error('Dump error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
