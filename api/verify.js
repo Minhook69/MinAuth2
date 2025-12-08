@@ -8,9 +8,9 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Normalize data
-  const clean = x => (x || "").trim().replace(/[\r\n]+/g, "");
-  const key = clean(req.query.key).toUpperCase();
+  // Normalizar datos
+  const clean = x => (x || "").trim().replace(/[\r\n]+/g, "").toUpperCase();
+  const key = clean(req.query.key);
   const hwid = clean(req.query.hwid);
 
   if (!key || !hwid) {
@@ -18,31 +18,41 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Always parse JSON from KV
-    let keyRaw = await kv.get(key);
-    if (!keyRaw) return res.status(404).send('key not found');
-
-    let keyData;
-    try { keyData = JSON.parse(keyRaw); }
-    catch { return res.status(500).send('Corrupted key data'); }
-
-    // Expiration check
-    if (keyData.expires && Date.now() > keyData.expires) {
-      return res.status(403).send('expired');
+    // Obtener datos de la key desde KV
+    const keyData = await kv.get(key);
+    
+    if (!keyData) {
+      return res.status(404).send('key not found');
     }
 
-    // First time = bind HWID
-    if (!keyData.hwid || keyData.hwid === "") {
+    // Verificar expiración
+    if (keyData.expires) {
+      const now = new Date();
+      const expiryDate = new Date(keyData.expires);
+      
+      if (now > expiryDate) {
+        return res.status(403).send('key expired');
+      }
+    }
+
+    // Verificar si es una key sin HWID (free)
+    if (keyData.no_hwid === true) {
+      return res.status(200).send('key verified');
+    }
+
+    // Primera vez: vincular HWID
+    if (!keyData.hwid || keyData.hwid === "" || keyData.hwid === null) {
       keyData.hwid = hwid;
-      await kv.put(key, JSON.stringify(keyData));
+      await kv.put(key, keyData);
       return res.status(200).send('key bound to hwid');
     }
 
-    // Verify HWID
+    // Verificar HWID coincide
     if (keyData.hwid === hwid) {
       return res.status(200).send('key verified');
     }
 
+    // HWID no coincide
     return res.status(403).send('hwid mismatch');
 
   } catch (error) {
