@@ -1,62 +1,75 @@
-const kv = require('../utils/kv');
+const { getAppKey, putAppKey, validateAppId, get } = require('../utils/kv');
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (req.method !== 'GET') {
+    return res.status(405).send('method not allowed');
   }
 
-  // Normalizar datos
-  const clean = x => (x || "").trim().replace(/[\r\n]+/g, "").toUpperCase();
-  const key = clean(req.query.key);
-  const hwid = clean(req.query.hwid);
+  const { key, hwid, appId = 'default' } = req.query;
 
   if (!key || !hwid) {
-    return res.status(400).send('Missing key or hwid');
+    return res.status(400).send('missing key or hwid');
+  }
+
+  if (!validateAppId(appId)) {
+    return res.status(400).send('invalid appId format');
   }
 
   try {
-    // Obtener datos de la key desde KV
-    const keyData = await kv.get(key);
+    // Verificar versión de la app
+    const versionData = await get(`version:${appId}`);
     
+    const keyData = await getAppKey(appId, key);
+
     if (!keyData) {
       return res.status(404).send('key not found');
     }
 
     // Verificar expiración
-    if (keyData.expires) {
-      const now = new Date();
-      const expiryDate = new Date(keyData.expires);
-      
-      if (now > expiryDate) {
-        return res.status(403).send('key expired');
-      }
+    if (keyData.expires && new Date(keyData.expires) < new Date()) {
+      return res.status(403).send('key expired');
     }
 
-    // Verificar si es una key sin HWID (free)
-    if (keyData.no_hwid === true) {
-      return res.status(200).send('key verified');
+    // Si es key free (no_hwid), no verificar HWID
+    if (keyData.no_hwid) {
+      return res.status(200).json({
+        status: 'verified',
+        type: 'free',
+        expires: keyData.expires,
+        version: versionData?.version || '1.0.0',
+        versionRequired: versionData?.required || false,
+        versionMessage: versionData?.message || ''
+      });
     }
 
-    // Primera vez: vincular HWID
-    if (!keyData.hwid || keyData.hwid === "" || keyData.hwid === null) {
+    // Si la key no tiene hwid, asignarla
+    if (!keyData.hwid) {
       keyData.hwid = hwid;
-      await kv.put(key, keyData);
-      return res.status(200).send('key bound to hwid');
+      keyData.bound_at = new Date().toISOString();
+      await putAppKey(appId, key, keyData);
+      return res.status(200).json({
+        status: 'bound',
+        expires: keyData.expires,
+        version: versionData?.version || '1.0.0',
+        versionRequired: versionData?.required || false,
+        versionMessage: versionData?.message || ''
+      });
     }
 
-    // Verificar HWID coincide
-    if (keyData.hwid === hwid) {
-      return res.status(200).send('key verified');
+    // Verificar que el hwid coincida
+    if (keyData.hwid !== hwid) {
+      return res.status(403).send('hwid mismatch');
     }
 
-    // HWID no coincide
-    return res.status(403).send('hwid mismatch');
-
+    res.status(200).json({
+      status: 'verified',
+      expires: keyData.expires,
+      version: versionData?.version || '1.0.0',
+      versionRequired: versionData?.required || false,
+      versionMessage: versionData?.message || ''
+    });
   } catch (error) {
     console.error('Verify error:', error);
-    return res.status(500).send('Internal server error');
+    res.status(500).send('Server error: ' + error.message);
   }
 };
