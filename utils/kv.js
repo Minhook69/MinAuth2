@@ -17,7 +17,7 @@ async function get(key) {
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`KV GET failed: ${response.status}`);
     const text = await response.text();
-    return JSON.parse(text);
+    return JSON.parse(text); // ✅ Esto está correcto
   } catch (error) {
     console.error('KV GET error:', error);
     return null;
