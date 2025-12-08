@@ -248,78 +248,78 @@
     </div>
 
 
-<!-- 🔥 NUEVA PESTAÑA: VERSION CONTROL -->
-<div id="tab-version" class="content-tab hidden animate-fade-in max-w-4xl mx-auto">
-    <div class="ka-panel rounded-lg p-6 mb-6">
-        <h3 class="text-lg font-semibold mb-6 flex items-center gap-2">
-            <i class="fa-solid fa-code-branch text-ka-accent"></i> Version Control
-        </h3>
-
-        <!-- Current Version Display -->
-        <div class="bg-[#0b0b0b] border border-[#1c1c1c] rounded-lg p-4 mb-6">
-            <div class="flex items-center justify-between">
+    <!-- 🔥 NUEVA PESTAÑA: VERSION CONTROL -->
+    <div id="tab-version" class="content-tab hidden animate-fade-in max-w-4xl mx-auto">
+        <div class="ka-panel rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-code-branch text-ka-accent"></i> Version Control
+            </h3>
+    
+            <!-- Current Version Display -->
+            <div class="bg-[#0b0b0b] border border-[#1c1c1c] rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Current Version</p>
+                        <p id="current-version" class="text-2xl font-bold text-blue-400 font-mono">Loading...</p>
+                        <p id="version-updated" class="text-[10px] text-gray-600 mt-1">Last updated: ...</p>
+                    </div>
+                    <div id="version-status-badge" class="px-3 py-1 rounded text-xs font-semibold">
+                        <i class="fa-solid fa-circle-check"></i> Active
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Version Form -->
+            <div class="grid grid-cols-1 gap-4 mb-4">
                 <div>
-                    <p class="text-xs text-gray-500 mb-1">Current Version</p>
-                    <p id="current-version" class="text-2xl font-bold text-blue-400 font-mono">Loading...</p>
-                    <p id="version-updated" class="text-[10px] text-gray-600 mt-1">Last updated: ...</p>
+                    <label class="block text-xs text-gray-500 mb-1.5 ml-1">New Version</label>
+                    <input 
+                        id="new_version" 
+                        type="text" 
+                        placeholder="1.0.0" 
+                        pattern="\d+\.\d+\.\d+"
+                        class="ka-input w-full p-2.5 rounded font-mono text-center text-lg"
+                    >
+                    <p class="text-[10px] text-gray-600 mt-1 ml-1">Format: X.X.X (e.g., 1.2.5)</p>
                 </div>
-                <div id="version-status-badge" class="px-3 py-1 rounded text-xs font-semibold">
-                    <i class="fa-solid fa-circle-check"></i> Active
+    
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1.5 ml-1">Update Message</label>
+                    <textarea 
+                        id="version_message" 
+                        rows="2" 
+                        placeholder="Please update to the latest version for new features..."
+                        class="ka-input w-full p-2.5 rounded resize-none"
+                    ></textarea>
+                </div>
+    
+                <div class="flex items-center gap-3 p-3 bg-[#0b0b0b] rounded border border-[#1c1c1c]">
+                    <input type="checkbox" id="version_required" checked class="accent-blue-600 w-4 h-4">
+                    <label for="version_required" class="text-sm text-gray-300">
+                        <span class="font-semibold">Force Update</span>
+                        <span class="block text-xs text-gray-500">Block login if version doesn't match</span>
+                    </label>
                 </div>
             </div>
+    
+            <button onclick="updateVersion()" class="ka-btn w-full py-2.5 rounded">
+                <i class="fa-solid fa-upload"></i> Update Version
+            </button>
         </div>
-
-        <!-- Version Form -->
-        <div class="grid grid-cols-1 gap-4 mb-4">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1.5 ml-1">New Version</label>
-                <input 
-                    id="new_version" 
-                    type="text" 
-                    placeholder="1.0.0" 
-                    pattern="\d+\.\d+\.\d+"
-                    class="ka-input w-full p-2.5 rounded font-mono text-center text-lg"
-                >
-                <p class="text-[10px] text-gray-600 mt-1 ml-1">Format: X.X.X (e.g., 1.2.5)</p>
-            </div>
-
-            <div>
-                <label class="block text-xs text-gray-500 mb-1.5 ml-1">Update Message</label>
-                <textarea 
-                    id="version_message" 
-                    rows="2" 
-                    placeholder="Please update to the latest version for new features..."
-                    class="ka-input w-full p-2.5 rounded resize-none"
-                ></textarea>
-            </div>
-
-            <div class="flex items-center gap-3 p-3 bg-[#0b0b0b] rounded border border-[#1c1c1c]">
-                <input type="checkbox" id="version_required" checked class="accent-blue-600 w-4 h-4">
-                <label for="version_required" class="text-sm text-gray-300">
-                    <span class="font-semibold">Force Update</span>
-                    <span class="block text-xs text-gray-500">Block login if version doesn't match</span>
-                </label>
-            </div>
+    
+        <!-- Version History Info -->
+        <div class="ka-panel rounded-lg p-6">
+            <h4 class="text-sm font-semibold mb-3 text-gray-400">
+                <i class="fa-solid fa-info-circle"></i> How it works
+            </h4>
+            <ul class="text-xs text-gray-500 space-y-2 leading-relaxed">
+                <li><i class="fa-solid fa-check text-green-500"></i> Clients must match this version to login</li>
+                <li><i class="fa-solid fa-check text-green-500"></i> If "Force Update" is enabled, outdated clients are blocked</li>
+                <li><i class="fa-solid fa-check text-green-500"></i> The message is shown to users with outdated versions</li>
+                <li><i class="fa-solid fa-check text-yellow-500"></i> Always test with a non-critical version first</li>
+            </ul>
         </div>
-
-        <button onclick="updateVersion()" class="ka-btn w-full py-2.5 rounded">
-            <i class="fa-solid fa-upload"></i> Update Version
-        </button>
     </div>
-
-    <!-- Version History Info -->
-    <div class="ka-panel rounded-lg p-6">
-        <h4 class="text-sm font-semibold mb-3 text-gray-400">
-            <i class="fa-solid fa-info-circle"></i> How it works
-        </h4>
-        <ul class="text-xs text-gray-500 space-y-2 leading-relaxed">
-            <li><i class="fa-solid fa-check text-green-500"></i> Clients must match this version to login</li>
-            <li><i class="fa-solid fa-check text-green-500"></i> If "Force Update" is enabled, outdated clients are blocked</li>
-            <li><i class="fa-solid fa-check text-green-500"></i> The message is shown to users with outdated versions</li>
-            <li><i class="fa-solid fa-check text-yellow-500"></i> Always test with a non-critical version first</li>
-        </ul>
-    </div>
-</div>
     
     <div id="tab-tools" class="content-tab hidden animate-fade-in max-w-4xl mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -366,29 +366,46 @@
 
 
   
-    /* --- UI NAVIGATION --- */
- function switchTab(tabId) {
+/* --- UI NAVIGATION --- */
+function switchTab(tabId) {
+    // Ocultar todos los tabs
     document.querySelectorAll('.content-tab').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    
+    // Mostrar el tab seleccionado
+    const targetTab = document.getElementById(`tab-${tabId}`);
+    if (targetTab) {
+        targetTab.classList.remove('hidden');
+    } else {
+        console.error(`Tab not found: tab-${tabId}`);
+    }
     
     // Sidebar active state
     document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    const activeButton = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
 
     // Header Title
     const titles = { 
         'generate': 'Dashboard / Licenses', 
         'users': 'Dashboard / Users', 
         'tools': 'Dashboard / Tools',
-        'version': 'Dashboard / Version Control'  // 🔥 NUEVO
+        'version': 'Dashboard / Version Control'
     };
-    document.getElementById('page-title').innerText = titles[tabId];
+    document.getElementById('page-title').innerText = titles[tabId] || 'Dashboard';
 
-    if (tabId === 'users') startAutoRefresh(); 
-    else stopAutoRefresh();
+    // Lógica específica por tab
+    if (tabId === 'users') {
+        startAutoRefresh();
+    } else {
+        stopAutoRefresh();
+    }
     
-    // 🔥 NUEVO: Cargar versión al entrar a la pestaña
-    if (tabId === 'version') loadCurrentVersion();
+    // Cargar versión al entrar a la pestaña
+    if (tabId === 'version') {
+        loadCurrentVersion();
+    }
 }
 
     function updateFormatConstraints() {
