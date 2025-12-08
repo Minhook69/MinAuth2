@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset HWID - EGate</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        .result.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+        .result.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Reset HWID</h1>
+        <p>Ingresa tu clave de licencia para resetear el HWID</p>
+        
+        <form id="resetForm">
+            <div class="form-group">
+                <label for="key">Clave de Licencia:</label>
+                <input 
+                    type="text" 
+                    id="key" 
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    required
+                    pattern="[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}"
+                >
+            </div>
+            
+            <button type="submit" id="submitBtn">Resetear HWID</button>
+            
+            <div class="result" id="result"></div>
+        </form>
+
+        <a href="/" class="back-link">← Volver al inicio</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('resetForm');
+        const resultDiv = document.getElementById('result');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const key = document.getElementById('key').value.toUpperCase();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Procesando...';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/reset?key=${key}`);
+                const text = await response.text();
+                
+                resultDiv.className = 'result';
+                
+                if (response.ok) {
+                    resultDiv.classList.add('success');
+                    resultDiv.textContent = `✓ ${text}`;
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = `✗ ${text}`;
+                }
+                
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ Error de conexión';
+                resultDiv.style.display = 'block';
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Resetear HWID';
+        });
+    </script>
+</body>
+</html>

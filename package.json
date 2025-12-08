@@ -1,0 +1,9 @@
+{
+  "name": "MinAuth-cloudflare-kv",
+  "version": "1.0.0",
+  "description": "MinAuth license system with Cloudflare KV",
+  "main": "api/verify.js",
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  }
+}
