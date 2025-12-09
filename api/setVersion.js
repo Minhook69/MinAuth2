@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
 
-  const { admin, version, required, message } = req.query;
+  const { admin, version, required, message, downloadUrl } = req.query;
 
   if (!verifyAdmin(admin)) {
     return res.status(403).json({ error: 'Forbidden' });
@@ -26,6 +26,7 @@ module.exports = async (req, res) => {
       version: version,
       required: required === 'true',
       message: message || "Please update to the latest version",
+      downloadUrl: downloadUrl || "", // URL de descarga opcional
       updated: new Date().toISOString()
     };
 
