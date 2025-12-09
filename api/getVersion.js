@@ -13,6 +13,7 @@ module.exports = async (req, res) => {
         version: "1.0.0",
         required: true,
         message: "Please update to the latest version",
+        downloadUrl: "",
         updated: new Date().toISOString()
       };
       
