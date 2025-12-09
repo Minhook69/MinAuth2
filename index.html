@@ -284,12 +284,13 @@
                 </div>
             </div>
 
+           
             <div id="tab-version" class="content-tab hidden animate-fade-in max-w-4xl mx-auto">
                 <div class="ka-panel rounded-lg p-6 mb-6">
                     <h3 class="text-lg font-semibold mb-6 flex items-center gap-2">
                         <i class="fa-solid fa-code-branch text-ka-accent"></i> Version Control
                     </h3>
-
+            
                     <div class="bg-[#0b0b0b] border border-[#1c1c1c] rounded-lg p-4 mb-6">
                         <div class="flex items-center justify-between">
                             <div>
@@ -302,7 +303,7 @@
                             </div>
                         </div>
                     </div>
-
+            
                     <div class="grid grid-cols-1 gap-4 mb-4">
                         <div>
                             <label class="block text-xs text-gray-500 mb-1.5 ml-1">New Version</label>
@@ -313,7 +314,7 @@
                                    class="ka-input w-full p-2.5 rounded font-mono text-center text-lg">
                             <p class="text-[10px] text-gray-600 mt-1 ml-1">Format: X.X.X (e.g., 1.2.5)</p>
                         </div>
-
+            
                         <div>
                             <label class="block text-xs text-gray-500 mb-1.5 ml-1">Update Message</label>
                             <textarea id="version_message"
@@ -321,21 +322,33 @@
                                       placeholder="Please update to the latest version for new features..."
                                       class="ka-input w-full p-2.5 rounded resize-none"></textarea>
                         </div>
-
+            
+                        <!-- NUEVO CAMPO: Download URL -->
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1.5 ml-1 flex items-center gap-2">
+                                <i class="fa-solid fa-download"></i> Download URL
+                            </label>
+                            <input id="version_download_url"
+                                   type="url"
+                                   placeholder="https://example.com/download/v4.0.0.zip"
+                                   class="ka-input w-full p-2.5 rounded font-mono text-sm">
+                            <p class="text-[10px] text-gray-600 mt-1 ml-1">URL where users can download the new version (opens automatically if Force Update is enabled)</p>
+                        </div>
+            
                         <div class="flex items-center gap-3 p-3 bg-[#0b0b0b] rounded border border-[#1c1c1c]">
                             <input type="checkbox" id="version_required" checked class="accent-blue-600 w-4 h-4">
                             <label for="version_required" class="text-sm text-gray-300">
                                 <span class="font-semibold">Force Update</span>
-                                <span class="block text-xs text-gray-500">Block login if version doesn't match</span>
+                                <span class="block text-xs text-gray-500">Block login if version doesn't match and open download URL</span>
                             </label>
                         </div>
                     </div>
-
+            
                     <button onclick="updateVersion()" class="ka-btn w-full py-2.5 rounded">
                         <i class="fa-solid fa-upload"></i> Update Version
                     </button>
                 </div>
-
+            
                 <div class="ka-panel rounded-lg p-6">
                     <h4 class="text-sm font-semibold mb-3 text-gray-400">
                         <i class="fa-solid fa-info-circle"></i> How it works
@@ -343,6 +356,7 @@
                     <ul class="text-xs text-gray-500 space-y-2 leading-relaxed">
                         <li><i class="fa-solid fa-check text-green-500"></i> Clients must match this version to login</li>
                         <li><i class="fa-solid fa-check text-green-500"></i> If "Force Update" is enabled, outdated clients are blocked</li>
+                        <li><i class="fa-solid fa-check text-blue-500"></i> The download URL will open automatically in the user's browser</li>
                         <li><i class="fa-solid fa-check text-green-500"></i> The message is shown to users with outdated versions</li>
                         <li><i class="fa-solid fa-check text-yellow-500"></i> Always test with a non-critical version first</li>
                     </ul>
@@ -467,64 +481,79 @@
         }
 
         async function loadCurrentVersion() {
-            try {
-                const res = await fetch(`${API}/getVersion`);
-                const data = await res.json();
+        try {
+            const res = await fetch(`${API}/getVersion`);
+            const data = await res.json();
 
-                document.getElementById('current-version').textContent = data.version;
-                document.getElementById('version-updated').textContent =
-                    `Last updated: ${new Date(data.updated).toLocaleString()}`;
+            document.getElementById('current-version').textContent = data.version;
+            document.getElementById('version-updated').textContent =
+                `Last updated: ${new Date(data.updated).toLocaleString()}`;
 
-                const badge = document.getElementById('version-status-badge');
-                if (data.required) {
-                    badge.className = 'px-3 py-1 rounded text-xs font-semibold bg-red-900/30 text-red-400 border border-red-900/50';
-                    badge.innerHTML = '<i class="fa-solid fa-lock"></i> Force Update Enabled';
-                } else {
-                    badge.className = 'px-3 py-1 rounded text-xs font-semibold bg-green-900/30 text-green-400 border border-green-900/50';
-                    badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Optional Update';
-                }
-
-                document.getElementById('new_version').value = data.version;
-                document.getElementById('version_message').value = data.message;
-                document.getElementById('version_required').checked = data.required;
-            } catch (e) {
-                console.error('Load version error:', e);
-                showToast('Failed to load version', 'error');
+            const badge = document.getElementById('version-status-badge');
+            if (data.required) {
+                badge.className = 'px-3 py-1 rounded text-xs font-semibold bg-red-900/30 text-red-400 border border-red-900/50';
+                badge.innerHTML = '<i class="fa-solid fa-lock"></i> Force Update Enabled';
+            } else {
+                badge.className = 'px-3 py-1 rounded text-xs font-semibold bg-green-900/30 text-green-400 border border-green-900/50';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Optional Update';
             }
+
+            // Cargar los valores actuales en los campos
+            document.getElementById('new_version').value = data.version;
+            document.getElementById('version_message').value = data.message || '';
+            document.getElementById('version_download_url').value = data.downloadUrl || '';
+            document.getElementById('version_required').checked = data.required;
+        } catch (e) {
+            console.error('Load version error:', e);
+            showToast('Failed to load version', 'error');
+        }
+    }
+
+         async function updateVersion() {
+        const version = document.getElementById('new_version').value.trim();
+        const message = document.getElementById('version_message').value.trim();
+        const downloadUrl = document.getElementById('version_download_url').value.trim();
+        const required = document.getElementById('version_required').checked;
+
+        if (!version) {
+            showToast('Enter a version number', 'error');
+            return;
         }
 
-        async function updateVersion() {
-            const version = document.getElementById('new_version').value.trim();
-            const message = document.getElementById('version_message').value.trim();
-            const required = document.getElementById('version_required').checked;
-
-            if (!version) {
-                showToast('Enter a version number', 'error');
-                return;
-            }
-
-            const versionRegex = /^\d+\.\d+\.\d+$/;
-            if (!versionRegex.test(version)) {
-                showToast('Invalid format. Use X.X.X (e.g., 1.0.0)', 'error');
-                return;
-            }
-
-            try {
-                const url = `${API}/setVersion?admin=${ADMIN}&version=${encodeURIComponent(version)}&required=${required}&message=${encodeURIComponent(message)}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (res.ok) {
-                    showToast(`Version updated to ${version}`, 'success');
-                    loadCurrentVersion();
-                } else {
-                    showToast(data.error || 'Update failed', 'error');
-                }
-            } catch (e) {
-                console.error('Update version error:', e);
-                showToast('Connection error', 'error');
-            }
+        const versionRegex = /^\d+\.\d+\.\d+$/;
+        if (!versionRegex.test(version)) {
+            showToast('Invalid format. Use X.X.X (e.g., 1.0.0)', 'error');
+            return;
         }
+
+        // Validar URL si se proporcionó
+        if (downloadUrl && !downloadUrl.startsWith('http')) {
+            showToast('Download URL must start with http:// or https://', 'error');
+            return;
+        }
+
+        try {
+            let url = `${API}/setVersion?admin=${ADMIN}&version=${encodeURIComponent(version)}&required=${required}&message=${encodeURIComponent(message)}`;
+            
+            // Agregar downloadUrl solo si tiene contenido
+            if (downloadUrl) {
+                url += `&downloadUrl=${encodeURIComponent(downloadUrl)}`;
+            }
+            
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (res.ok) {
+                showToast(`Version updated to ${version}`, 'success');
+                loadCurrentVersion();
+            } else {
+                showToast(data.error || 'Update failed', 'error');
+            }
+        } catch (e) {
+            console.error('Update version error:', e);
+            showToast('Connection error', 'error');
+        }
+    }
 
         async function processGeneration() {
             const type = document.getElementById('gen_type').value;
